@@ -1,5 +1,18 @@
+commit 203bdf6761338c0778d9e903198e3a1112aba61c
+Author: baidaogui <baidaogui@sogou-inc.com>
+Date:   Thu Jan 10 14:47:20 2019 +0800
+
+    Video : add ScreenOrientationManager to manage video's orientation on java
+    
+    N/A
+    
+    .
+    
+    Change-Id: I42df4a26d056de0e25fa6af790cb784a70371839
+    Signed-off-by: baidaogui <baidaogui@sogou-inc.com>
+
 diff --git a/sogou_webview/java/src/com/sogou/chromium/player/HTML5VideoClassic.java b/sogou_webview/java/src/com/sogou/chromium/player/HTML5VideoClassic.java
-index 61b7c6e..b8678b7 100644
+index 61b7c6e..7c94b07 100644
 --- a/sogou_webview/java/src/com/sogou/chromium/player/HTML5VideoClassic.java
 +++ b/sogou_webview/java/src/com/sogou/chromium/player/HTML5VideoClassic.java
 @@ -54,7 +54,9 @@ import org.chromium.ui.base.WindowAndroid;
@@ -13,7 +26,23 @@ index 61b7c6e..b8678b7 100644
      protected static final String LOGTAG = "sogou-video-HTML5VideoClassic";
  
      private static final int SCREEN_ORIENTATION_UNSET = 999;
-@@ -349,7 +351,8 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -316,6 +318,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+         }
+         mUiControls.didEnterFullscreen();
+ 
++        /*
+         if (mWebPageOrientation != ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                 && mWebPageOrientation != ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                 && mWebPageOrientation != ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+@@ -323,6 +326,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+                 && mWebPageOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+             onLockChanged(true);
+         }
++        */
+         if (mProxy != null) {
+             mProxy.notifyEnterFullscreen();
+         }
+@@ -349,7 +353,8 @@ public class HTML5VideoClassic extends HTML5VideoView
          }
      }
  
@@ -23,7 +52,7 @@ index 61b7c6e..b8678b7 100644
          return getVideoWidth() > 0
              && getVideoHeight() > 0
              && getVideoWidth() > getVideoHeight();
-@@ -379,7 +382,8 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -379,7 +384,8 @@ public class HTML5VideoClassic extends HTML5VideoView
          MediaLog.d(LOGTAG, "Sogou Video exit full screen, isDetachedFromProxy(): "
                  + isDetachedFromProxy());
          // restore orientation
@@ -33,16 +62,16 @@ index 61b7c6e..b8678b7 100644
          if (mProxy != null) {
              mProxy.notifyExitFullscreen();
          }
-@@ -458,6 +462,8 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -458,6 +464,8 @@ public class HTML5VideoClassic extends HTML5VideoView
          mTopContentOffsetY = mRenderCoordinates.getContentOffsetYPix();
          mIsFixedPositioned = proxy.isFixedPositioned();
          NetworkChangeNotifier.addConnectionTypeObserver(this);
-+        ScreenOrientationManager.setScreenOrientationClient(this);
++        ScreenOrientationManager.getInstance().setScreenOrientationClient(this);
 +        ScreenOrientationProvider.setOrientationDelegate(this);
      }
  
      private String getTitle() {
-@@ -844,6 +850,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -844,6 +852,7 @@ public class HTML5VideoClassic extends HTML5VideoView
          mSaveSeekTime = getCurrentPosition();
  
          suspendMediaPlayer();
@@ -50,7 +79,7 @@ index 61b7c6e..b8678b7 100644
          boolean isActivityInForeground = Utils.isActivityInForeground(getContext());
          MediaLog.d(LOGTAG, "removing video view, inForeground: "
                  + isActivityInForeground
-@@ -886,12 +893,14 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -886,12 +895,14 @@ public class HTML5VideoClassic extends HTML5VideoView
      // set orientation and start inspecting device orientation change
      // for video which width is bigger than height
      void resumeOrientationIfNeccesary() {
@@ -65,7 +94,7 @@ index 61b7c6e..b8678b7 100644
      }
  
  
-@@ -914,6 +923,11 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -914,6 +925,11 @@ public class HTML5VideoClassic extends HTML5VideoView
  
          resumeOrientationIfNeccesary();
  
@@ -77,16 +106,17 @@ index 61b7c6e..b8678b7 100644
          MediaLog.d(LOGTAG, "Sogou Video resumeVideoView");
  
          // video view is removed on pause
-@@ -1213,7 +1227,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -1219,15 +1235,15 @@ public class HTML5VideoClassic extends HTML5VideoView
+     // ScreenOrientationDelegate's interface
      @Override
-     public boolean canUnlockOrientation(
-             Activity activity, int defaultOrientation) {
--        return false;
-+        return true;
+     public boolean canLockOrientation() {
+-        return true;
++        return false;
      }
  
-     // ScreenOrientationDelegate's interface
-@@ -1227,7 +1241,6 @@ public class HTML5VideoClassic extends HTML5VideoView
+     @SuppressLint("WrongConstant")
+     private void saveScreenOrientation() {
++        /*
          if (getActivity() == null) {
              return;
          }
@@ -94,17 +124,39 @@ index 61b7c6e..b8678b7 100644
  
          MediaLog.d(LOGTAG, "save screen orienatation");
          if (mWebPageOrientation == SCREEN_ORIENTATION_UNSET) {
-@@ -1275,7 +1288,9 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -1235,10 +1251,12 @@ public class HTML5VideoClassic extends HTML5VideoView
+             MediaLog.d(LOGTAG, "save screen orienatation, mWebPageOrientation: "
+                     + mWebPageOrientation);
+         }
++        */
+     }
+ 
+     @SuppressLint("WrongConstant")
+     private void restoreScreenOrientation() {
++        /*
+         if (getActivity() == null) {
+             return;
+         }
+@@ -1250,6 +1268,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+         } else {
+             MediaLog.e(LOGTAG, "can't restore screen orienatation!");
+         }
++        */
+     }
+ 
+     private boolean canEnterFullscreen() {
+@@ -1275,7 +1294,9 @@ public class HTML5VideoClassic extends HTML5VideoView
              return;
          }
  
+-        saveScreenOrientation();
 +        // SOGOU_VIDEO_FIXME
-         saveScreenOrientation();
++        // saveScreenOrientation();
 +        ScreenOrientationManager.getInstance().setForceOrientation();
  
          enterFullscreenImpl();
      }
-@@ -1349,14 +1364,16 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -1349,14 +1370,16 @@ public class HTML5VideoClassic extends HTML5VideoView
          if (ac == null || mProxy == null) {
              return;
          }
@@ -123,7 +175,7 @@ index 61b7c6e..b8678b7 100644
          Context ctx = getContext();
          if (ctx == null) {
              return null;
-@@ -1390,7 +1407,8 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -1390,7 +1413,8 @@ public class HTML5VideoClassic extends HTML5VideoView
                      enterFullscreen();
                  } else if (canExitFullscreen(newConfig.orientation)
                          && !isWebviewPaused()) {
@@ -133,20 +185,20 @@ index 61b7c6e..b8678b7 100644
                  }
              }
          };
-@@ -1451,6 +1469,7 @@ public class HTML5VideoClassic extends HTML5VideoView
+@@ -1451,6 +1475,7 @@ public class HTML5VideoClassic extends HTML5VideoView
          mHandler.removeCallbacks(mEnterFullscreenAdjustVideoView);
          mHandler.removeCallbacks(mDelayedExitfullscreen);
          NetworkChangeNotifier.removeConnectionTypeObserver(this);
-+        ScreenOrientationManager.setScreenOrientationClient(null);
++        ScreenOrientationManager.getInstance().setScreenOrientationClient(null);
          ScreenOrientationProvider.setOrientationDelegate(null);
          setDetachedProxy(null);
          MediaLog.d(LOGTAG, "destroy video view");
 diff --git a/sogou_webview/java/src/com/sogou/chromium/player/ScreenOrientationManager.java b/sogou_webview/java/src/com/sogou/chromium/player/ScreenOrientationManager.java
 new file mode 100644
-index 0000000..8f29869
+index 0000000..04973d7
 --- /dev/null
 +++ b/sogou_webview/java/src/com/sogou/chromium/player/ScreenOrientationManager.java
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,219 @@
 +// Copyright 2017 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -159,6 +211,7 @@ index 0000000..8f29869
 +import android.content.pm.ActivityInfo;
 +import android.os.Handler;
 +import android.view.OrientationEventListener;
++import com.sogou.chromium.player.utils.MediaLog;
 +
 +public class ScreenOrientationManager {
 +
@@ -170,7 +223,7 @@ index 0000000..8f29869
 +        public boolean shouldSwitchToLandscapeOnFullscreen();
 +    }
 +
-+    private static ScreenOrientationClient mScreenOrientationClient;
++    private ScreenOrientationClient mScreenOrientationClient;
 +
 +    private static int OrientationStateUninited = -999;
 +    private int mWebPageOrientationState = OrientationStateUninited;
@@ -191,7 +244,7 @@ index 0000000..8f29869
 +        return mInstance;
 +    }
 +
-+    public static void setScreenOrientationClient(
++    public void setScreenOrientationClient(
 +            ScreenOrientationClient client) {
 +        mScreenOrientationClient = client;
 +    }
@@ -201,9 +254,11 @@ index 0000000..8f29869
 +
 +    @SuppressLint("WrongConstant")
 +    public void setForceOrientation() {
++        MediaLog.d(LOGTAG, "setForceOrientation-0");
 +        if (isFullScreenMode()) {
 +            return;
 +        }
++        MediaLog.d(LOGTAG, "setForceOrientation-1");
 +        if (mWebPageOrientationState != OrientationStateUninited) {
 +            return;
 +        }
@@ -212,10 +267,13 @@ index 0000000..8f29869
 +            return;
 +        }
 +        mWebPageOrientationState = ac.getRequestedOrientation();
++        MediaLog.d(LOGTAG, "setForceOrientation-2, mWebPageOrientationState: " + mWebPageOrientationState);
 +        if (shouldSwitchToLandscapeOnFullscreen()) {
++        MediaLog.d(LOGTAG, "setForceOrientation-3, is landscape");
 +            mSwitchedToLandscapeOnFullscreen = true;
 +            setOrientationAndListenChange(true);
 +        } else {
++        MediaLog.d(LOGTAG, "setForceOrientation-3, is not landscape");
 +            ac.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 +        }
 +    }
@@ -226,14 +284,18 @@ index 0000000..8f29869
 +        if (ac == null) {
 +            return;
 +        }
++        MediaLog.d(LOGTAG, "restoreOrientation-0");
 +        if (mWebPageOrientationState != OrientationStateUninited) {
++            MediaLog.d(LOGTAG, "restoreOrientation-0-1, mWebPageOrientationState: " + mWebPageOrientationState);
 +            ac.setRequestedOrientation(mWebPageOrientationState);
 +        }
 +        mWebPageOrientationState = OrientationStateUninited;
++        MediaLog.d(LOGTAG, "restoreOrientation-1, stopOrientationChangeListener");
 +        stopOrientationChangeListener();
 +    }
 +
 +    public void stopOrientationChangeListener() {
++        MediaLog.d(LOGTAG, "stopOrientationChangeListener-1");
 +        if (mOrientationListener != null) {
 +            mOrientationListener.disable();
 +        }
@@ -251,6 +313,7 @@ index 0000000..8f29869
 +        if (!shouldSwitchToLandscapeOnFullscreen()) {
 +            return;
 +        }
++        MediaLog.d(LOGTAG, "setOrientationAndListenChange");
 +        ac.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
 +        startOrientationChangeListener(createListenerIfNone);
 +    }
@@ -265,15 +328,31 @@ index 0000000..8f29869
 +            mOrientationListener = new OrientationEventListener(ac) {
 +                @Override
 +                public void onOrientationChanged(int rotation) {
++                    /*
++                       MediaLog.d(LOGTAG, "onOrientationChanged-1"
++                       + ", rotation: " + rotation);
++                     */
 +                    if (((rotation >= 0) && (rotation <= 45))
 +                            || (rotation >= 315)
 +                            || ((rotation >= 135) && (rotation <= 225))) { //portrait
++                        /*
++                           MediaLog.d(LOGTAG, "onOrientationChanged-1-1"
++                           + ", rotation: " + rotation);
++                         */
 +                        mMayChangeOrientation = false;
 +                    } else if (((rotation > 60) && (rotation < 120))
 +                            || ((rotation > 240) && (rotation < 300))) { //landscape
++                        /*
++                           MediaLog.d(LOGTAG, "onOrientationChanged-1-2"
++                           + ", rotation: " + rotation);
++                         */
 +                        if (mMayChangeOrientation) {
 +                            return;
 +                        }
++                        /*
++                           MediaLog.d(LOGTAG, "onOrientationChanged-1-2-1"
++                           + ", rotation: " + rotation);
++                         */
 +                        mMayChangeOrientation = true;
 +                        mHandler.removeCallbacks(mRunnableWillExitfullscreen);
 +                        mHandler.postDelayed(mRunnableWillExitfullscreen, 500);
@@ -312,12 +391,16 @@ index 0000000..8f29869
 +        public void run() {
 +            // for bug #1321756, this runnable avoids
 +            // switching to exit fullscreen when shake mobile
++            MediaLog.d(LOGTAG, "mRunnableWillExitfullscreen-0, mMayChangeOrientation: "
++                    + mMayChangeOrientation
++                    + ", mOrientationListener: " + mOrientationListener);
 +            Activity ac = getActivity();
 +            if (ac == null
 +                    || !mMayChangeOrientation
 +                    || mOrientationListener == null) {
 +                return;
 +            }
++            MediaLog.d(LOGTAG, "mRunnableWillExitfullscreen-1, setRequestedOrientation");
 +            ac.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
 +            mOrientationListener.disable();
 +        }
@@ -347,4 +430,3 @@ index f74af25..1dd07ef 100644
    "java/src/com/sogou/chromium/player/SwVideoDelegate.java",
    "java/src/com/sogou/chromium/player/VideoPingbackManager.java",
    "java/src/com/sogou/chromium/player/VideoUrlManager.java",
-
